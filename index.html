@@ -1,1 +1,277 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="My Planner">
+<meta name="theme-color" content="#2d6a2d">
+<title>My Planner 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --g1:#1e4d1e;--g2:#2d6a2d;--g3:#3a7d3a;--g4:#4a9c4a;--g5:#6fcf6f;
+  --gp:#c8e6c8;--gb:#e8f5e8;
+  --red:#e74c3c;--orange:#f39c12;--yellow:#ffd93d;
+  --white:#fff;--gray:#f0f0f0;--gray2:#e0e0e0;--gray3:#aaa;
+  --text:#1a1a1a;--text2:#555;
+  --shadow:0 2px 12px rgba(0,0,0,0.12);--r:12px;
+}
+html,body{height:100%;overflow:hidden;font-family:'Sarabun',sans-serif;background:#f0f0f0;color:var(--text)}
+#auth-screen{position:fixed;inset:0;background:var(--g1);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;z-index:1000;}
+.auth-logo{font-family:'Kanit',sans-serif;font-size:42px;font-weight:800;color:#fff;margin-bottom:4px}
+.auth-sub{font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:40px;letter-spacing:1px}
+.auth-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:16px;padding:24px;width:100%;max-width:360px}
+.auth-title{font-family:'Kanit',sans-serif;font-size:18px;font-weight:600;color:#fff;margin-bottom:20px;text-align:center}
+.auth-input{width:100%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;padding:13px 14px;font-family:'Sarabun',sans-serif;font-size:15px;color:#fff;margin-bottom:12px;outline:none;transition:border-color 0.2s;}
+.auth-input::placeholder{color:rgba(255,255,255,0.4)}
+.auth-input:focus{border-color:var(--g5)}
+.auth-btn{width:100%;background:var(--g4);border:none;border-radius:10px;padding:14px;font-family:'Kanit',sans-serif;font-size:16px;font-weight:600;color:#fff;cursor:pointer;margin-top:4px;}
+.auth-toggle{text-align:center;margin-top:16px;font-size:13px;color:rgba(255,255,255,0.6)}
+.auth-toggle span{color:var(--g5);cursor:pointer;font-weight:600}
+.auth-err{color:#ff8080;font-size:12px;text-align:center;margin-top:8px;min-height:18px}
+#app{display:none;height:100%;flex-direction:column}
+#app.visible{display:flex}
+.topbar{background:var(--g2);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.25);padding-top:max(12px,env(safe-area-inset-top));}
+.topbar-title{font-family:'Kanit',sans-serif;font-size:18px;font-weight:700}
+.topbar-user{font-size:11px;color:rgba(255,255,255,0.7);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logout-btn{background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:6px 12px;font-family:'Kanit',sans-serif;font-size:12px;color:#fff;cursor:pointer}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--gray2);display:flex;padding-bottom:max(12px,env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,0.08);z-index:50;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0 4px;cursor:pointer;color:var(--gray3)}
+.nav-item.active{color:var(--g3)}
+.nav-icon{font-size:22px;line-height:1}
+.nav-label{font-family:'Kanit',sans-serif;font-size:10px;margin-top:3px;font-weight:500}
+.page{display:none;padding:16px}
+.page.active{display:block}
+.week-nav{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:var(--r);padding:10px 14px;margin-bottom:14px;box-shadow:var(--shadow);}
+.week-lbl{font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;color:var(--g2)}
+.wbtn{background:var(--g4);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:'Kanit',sans-serif;font-size:13px;cursor:pointer}
+.day-card{background:#fff;border-radius:var(--r);margin-bottom:14px;box-shadow:var(--shadow);border:1.5px solid var(--gray2);overflow:hidden}
+.day-card.is-today{border-color:var(--g4);box-shadow:0 0 0 2px rgba(74,156,74,0.2),var(--shadow)}
+.dcard-head{background:var(--g3);color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+.dcard-dayname{font-family:'Kanit',sans-serif;font-size:16px;font-weight:700}
+.dcard-date{font-size:11px;opacity:0.85;font-family:'Kanit',sans-serif}
+.today-pill{background:#ffd93d;color:#333;font-size:9px;font-family:'Kanit',sans-serif;font-weight:700;padding:2px 8px;border-radius:99px}
+.donut-area{background:var(--gb);display:flex;flex-direction:column;align-items:center;padding:12px 0 6px}
+.donut-wrap{position:relative;width:80px;height:80px}
+.donut-wrap svg{width:80px;height:80px;transform:rotate(-90deg)}
+.donut-bg2{fill:none;stroke:var(--gp);stroke-width:11}
+.donut-fill2{fill:none;stroke:var(--g4);stroke-width:11;stroke-linecap:round;transition:stroke-dashoffset 0.5s ease}
+.donut-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Kanit',sans-serif;font-size:14px;font-weight:700;color:var(--g2)}
+.task-lbl{background:var(--g4);color:#fff;font-family:'Kanit',sans-serif;font-size:11px;font-weight:600;padding:4px 14px;}
+.task-list2{padding:4px 10px}
+.task-item2{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid #f5f5f5;cursor:pointer;user-select:none}
+.task-item2:last-child{border-bottom:none}
+.task-cb2{width:17px;height:17px;border:2px solid var(--g4);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;}
+.task-item2.done2 .task-cb2{background:var(--g4);border-color:var(--g4)}
+.task-item2.done2 .task-cb2::after{content:'✓'}
+.task-txt2{font-size:13px;color:var(--text2);flex:1}
+.task-item2.done2 .task-txt2{text-decoration:line-through;color:#bbb}
+.task-del{background:none;border:none;color:#ddd;font-size:16px;cursor:pointer;padding:0 4px;line-height:1}
+.add-row{display:flex;gap:6px;padding:6px 10px 10px}
+.add-inp{flex:1;border:1px solid var(--gray2);border-radius:8px;padding:8px 10px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none}
+.add-inp:focus{border-color:var(--g4)}
+.add-btn2{background:var(--g4);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:16px;font-weight:700;cursor:pointer}
+.day-sum{background:var(--gb);padding:8px 14px;display:flex;justify-content:space-around;border-top:1px solid var(--gp)}
+.sum-it{text-align:center}
+.sum-lbl2{font-size:9px;color:var(--gray3);font-family:'Kanit',sans-serif}
+.sum-v{font-family:'Kanit',sans-serif;font-size:16px;font-weight:800}
+.sv-total{color:var(--g2)}.sv-done{color:var(--g4)}.sv-undone{color:var(--red)}
+.month-nav{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:var(--r);padding:10px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.month-lbl{font-family:'Kanit',sans-serif;font-size:15px;font-weight:700;color:var(--g2)}
+.habit-table-wrap{background:#fff;border-radius:var(--r);overflow-x:auto;box-shadow:var(--shadow);margin-bottom:14px}
+.htable{border-collapse:collapse;min-width:100%;font-size:11px}
+.htable th,.htable td{border:1px solid var(--gray2);text-align:center;padding:0;white-space:nowrap}
+.htable td.hname{text-align:left;padding:6px 10px;font-size:12px;background:var(--gb);min-width:120px;color:var(--text2);font-weight:500}
+.wk-hd{background:var(--g2);color:#fff;font-family:'Kanit',sans-serif;font-weight:600;font-size:10px;padding:5px 6px}
+.dy-hd{background:var(--g4);color:#fff;font-family:'Kanit',sans-serif;font-size:9px;padding:3px 2px;min-width:24px}
+.dy-hd.sun{background:#c0392b}.dy-hd.sat{background:#2980b9}
+.dn-cell{font-family:'Kanit',sans-serif;font-size:9px;padding:2px 3px;background:var(--gp);color:var(--g2);font-weight:600}
+.dn-cell.sun{background:#fde8e8;color:#c0392b}.dn-cell.sat{background:#e8f0fd;color:#2980b9}
+.hck{padding:3px;cursor:pointer;min-width:24px;height:24px;vertical-align:middle}
+.hck.hchk{background:var(--g5)}
+.hck.hchk::after{content:'✓';color:var(--g2);font-size:11px;font-weight:700}
+.hck.hfut{background:#f9f9f9;cursor:default}
+.hpct-cell{font-family:'Kanit',sans-serif;font-size:10px;font-weight:700;padding:3px 5px}
+.sum-row td{background:var(--gb);font-family:'Kanit',sans-serif;font-size:9px;font-weight:600;color:var(--g2);padding:2px 3px}
+.habit-mgmt{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.hmgmt-t{font-family:'Kanit',sans-serif;font-size:13px;font-weight:600;color:var(--g2);margin-bottom:10px}
+.hmgmt-row{display:flex;gap:8px}
+.hinput{flex:1;border:1px solid var(--gray2);border-radius:8px;padding:9px 12px;font-family:'Sarabun',sans-serif;font-size:14px;outline:none}
+.hinput:focus{border-color:var(--g4)}
+.hadd-btn{background:var(--g4);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-family:'Kanit',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+.hpills{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.hpill{display:flex;align-items:center;gap:4px;background:var(--gb);border:1px solid var(--gp);border-radius:99px;padding:4px 10px 4px 12px;font-size:12px;color:var(--g2)}
+.hdel{background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:0 2px}
+.stats-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.scard{background:#fff;border-radius:var(--r);padding:16px;text-align:center;box-shadow:var(--shadow);border-top:4px solid var(--g4)}
+.scard-v{font-family:'Kanit',sans-serif;font-size:30px;font-weight:800;color:var(--g2)}
+.scard-v.red{color:var(--red)}.scard-v.orange{color:var(--orange)}
+.scard-l{font-size:11px;color:var(--gray3);margin-top:2px}
+.big-donut-wrap{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:14px}
+.bdc{position:relative;width:140px;height:140px}
+.bdc svg{width:140px;height:140px;transform:rotate(-90deg)}
+.bd-bg{fill:none;stroke:#fde8e8;stroke-width:18}
+.bd-undone{fill:none;stroke:var(--red);stroke-width:18}
+.bd-done{fill:none;stroke:var(--g4);stroke-width:18;stroke-linecap:round}
+.bdc-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.bdc-pct{font-family:'Kanit',sans-serif;font-size:26px;font-weight:800;color:var(--g2)}
+.bdc-sub{font-size:10px;color:var(--gray3)}
+.stats-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.stats-tbl td{padding:8px 12px;border-bottom:1px solid var(--gray2)}
+.stats-tbl td:first-child{color:var(--gray3)}
+.stats-tbl td:last-child{font-family:'Kanit',sans-serif;font-weight:700;text-align:right}
+.green-v{color:var(--g4)}.red-v{color:var(--red)}
+.score-box{background:var(--gb);border:2px solid var(--g4);border-radius:var(--r);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:12px;width:100%}
+.score-lbl{font-family:'Kanit',sans-serif;font-size:15px;font-weight:700;color:var(--g2)}
+.score-val{font-family:'Kanit',sans-serif;font-size:16px;font-weight:800;color:var(--g4)}
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--gray3);font-family:'Kanit',sans-serif;font-size:14px;gap:8px}
+.spinner{width:20px;height:20px;border:3px solid var(--gp);border-top-color:var(--g4);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--g2);color:#fff;padding:10px 20px;border-radius:99px;font-family:'Kanit',sans-serif;font-size:13px;opacity:0;transition:all 0.3s;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
 
+<div id="auth-screen">
+  <div class="auth-logo">📋 Planner</div>
+  <div class="auth-sub">วางแผน · ติดตาม · สำเร็จ</div>
+  <div class="auth-box">
+    <div class="auth-title" id="auth-title">เข้าสู่ระบบ</div>
+    <input class="auth-input" id="auth-email" type="email" placeholder="อีเมล">
+    <input class="auth-input" id="auth-pass" type="password" placeholder="รหัสผ่าน">
+    <div id="auth-name-wrap" style="display:none"><input class="auth-input" id="auth-name" type="text" placeholder="ชื่อของคุณ"></div>
+    <button class="auth-btn" id="auth-submit">เข้าสู่ระบบ</button>
+    <div class="auth-err" id="auth-err"></div>
+    <div class="auth-toggle"><span id="auth-toggle-btn">ยังไม่มีบัญชี? สมัครสมาชก</span></div>
+  </div>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div><div class="topbar-title">📋 My Planner</div><div class="topbar-user" id="topbar-user"></div></div>
+    <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+  </div>
+  <div class="content" id="content">
+    <div class="page active" id="page-planner">
+      <div class="week-nav">
+        <button class="wbtn" onclick="changeWeek(-1)">◀</button>
+        <div class="week-lbl" id="week-lbl">กำลงโหลด...</div>
+        <button class="wbtn" onclick="changeWeek(1)">▶</button>
+      </div>
+      <div id="days-container"></div>
+    </div>
+    <div class="page" id="page-habits">
+      <div class="month-nav">
+        <button class="wbtn" onclick="changeMonth(-1)">◀</button>
+        <div class="month-lbl" id="month-lbl"></div>
+        <button class="wbtn" onclick="changeMonth(1)">▶</button>
+      </div>
+      <div class="habit-table-wrap"><table class="htable" id="habit-table"></table></div>
+      <div class="habit-mgmt">
+        <div class="hmgmt-t">➕ จัดการ Habits</div>
+        <div class="hmgmt-row">
+          <input class="hinput" id="hinput" placeholder="ชื่อ habit ใหม่..." onkeydown="if(event.key==='Enter')addHabit()">
+          <button class="hadd-btn" onclick="addHabit()">เพิ่ม</button>
+        </div>
+        <div class="hpills" id="hpills"></div>
+      </div>
+    </div>
+    <div class="page" id="page-summary">
+      <div class="stats-cards" id="stats-cards"></div>
+      <div class="big-donut-wrap">
+        <div class="bdc">
+          <svg viewBox="0 0 100 100">
+            <circle class="bd-bg" cx="50" cy="50" r="38"/>
+            <circle class="bd-undone" cx="50" cy="50" r="38" id="bd-undone" stroke-dasharray="238.76" stroke-dashoffset="0"/>
+            <circle class="bd-done" cx="50" cy="50" r="38" id="bd-done" stroke-dasharray="238.76" stroke-dashoffset="238.76"/>
+          </svg>
+          <div class="bdc-txt"><div class="bdc-pct" id="bdc-pct">0%</div><div class="bdc-sub">สำเร็จ</div></div>
+        </div>
+        <table class="stats-tbl" id="stats-tbl"></table>
+        <div class="score-box"><div class="score-lbl">คะแนน</div><div class="score-val" id="score-val">-</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-planner" onclick="switchPage('planner')"><div class="nav-icon">📋</div><div class="nav-label">Planner</div></div>
+    <div class="nav-item" id="nav-habits" onclick="switchPage('habits')"><div class="nav-icon">✅</div><div class="nav-label">Habits</div></div>
+    <div class="nav-item" id="nav-summary" onclick="switchPage('summary')"><div class="nav-icon">📊</div><div class="nav-label">สรุป</div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SURL='https://ooqcllniwiijlbfyzlsl.supabase.co';
+const SKEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vcWNsbG5pd2lpamxiZnl6bHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2Mjg2MzgsImV4cCI6MjA5MzIwNDYzOH0.q7Q_DwQJzh1gYVw1BgecDlereTovuo-tWNyWVQ-__sM';
+const sb=supabase.createClient(SURL,SKEY);
+const THAI_DAYS=['อาทิตย์','จันทร์','องคาร','พุธ','พฤหัสบด','ศุกร์','เสาร์'];
+const THAI_MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const DAY_S=['อา','จ','อ','พ','พฤ','ศ','ส'];
+let currentUser=null,weekOffset=0,monthOffset=0,habits=[],tasksCache={};
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+let isSignUp=false;
+document.getElementById('auth-toggle-btn').onclick=()=>{
+  isSignUp=!isSignUp;
+  document.getElementById('auth-title').textContent=isSignUp?'สมัครสมาชิก':'เข้าสู่ระบบ';
+  document.getElementById('auth-submit').textContent=isSignUp?'สมัครสมาชิก':'เข้าสู่ระบบ';
+  document.getElementById('auth-toggle-btn').textContent=isSignUp?'มีบัญชีแล้ว? เข้าสู่ระบบ':'ยังไม่มีบัญชี? สมัครสมาชิก';
+  document.getElementById('auth-name-wrap').style.display=isSignUp?'block':'none';
+  document.getElementById('auth-err').textContent='';
+};
+document.getElementById('auth-submit').onclick=async()=>{
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  const errEl=document.getElementById('auth-err');
+  errEl.textContent='';
+  if(!email||!pass){errEl.textContent='กรุณากรอกอีเมลและรหัสผ่าน';return;}
+  document.getElementById('auth-submit').textContent='กำลังดำเนินการ...';
+  try{
+    let res=isSignUp?await sb.auth.signUp({email,password:pass}):await sb.auth.signInWithPassword({email,password:pass});
+    if(res.error)throw res.error;
+    if(isSignUp&&!res.data.session){errEl.style.color='#6fcf6f';errEl.textContent='สมัครสำเร็จ! กรุณายืนยันอีเมลก่อนเข้าใชงาน';}
+  }catch(e){errEl.style.color='#ff8080';errEl.textContent=e.message||'เกิดข้อผิดพลาด';}
+  document.getElementById('auth-submit').textContent=isSignUp?'สมัครสมาชิก':'เข้าสู่ระบบ';
+};
+async function logout(){await sb.auth.signOut();currentUser=null;tasksCache={};habits=[];document.getElementById('app').classList.remove('visible');document.getElementById('auth-screen').style.display='flex';}
+sb.auth.onAuthStateChange(async(event,session)=>{
+  if(session?.user){
+    currentUser=session.user;
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('topbar-user').textContent=currentUser.email;
+    await loadHabits();renderPlanner();
+  }else{document.getElementById('auth-screen').style.display='flex';document.getElementById('app').classList.remove('visible');}
+});
+function switchPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  if(page==='habits')renderHabits();
+  if(page==='summary')renderSummary();
+}
+function getWeekDates(off){const jan1=new Date(2026,0,1);const dow=jan1.getDay();const mon=new Date(jan1);mon.setDate(jan1.getDate()-(dow===0?6:dow-1)+off*7);return Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return d;});}
+function dateKey(date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+function isToday(date){const t=new Date();return date.getDate()===t.getDate()&&date.getMonth()===t.getMonth()&&date.getFullYear()===t.getFullYear();}
+async function loadTasksForWeek(dates){const keys=dates.map(dateKey);const{data}=await sb.from('tasks').select('*').eq('user_id',currentUser.id).in('date',keys);if(data)data.forEach(t=>{if(!tasksCache[t.date])tasksCache[t.date]=[];if(!tasksCache[t.date].find(x=>x.id===t.id))tasksCache[t.date].push(t);});}
+async function renderPlanner(){const dates=getWeekDates(weekOffset);const s=`${dates[0].getDate()}/${dates[0].getMonth()+1}/${String(dates[0].getFullYear()).slice(-2)}`;const e=`${dates[6].getDate()}/${dates[6].getMonth()+1}/${String(dates[6].getFullYear()).slice(-2)}`;document.getElementById('week-lbl').textContent=`สัปดาห์ที่ ${weekOffset+1}  (${s}–${e})`;const con=document.getElementById('days-container');con.innerHTML='<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>';await loadTasksForWeek(dates);con.innerHTML='';dates.forEach(d=>con.appendChild(buildDayCard(d)));}
+function buildDayCard(date){const key=dateKey(date);const dayTasks=tasksCache[key]||[];const total=dayTasks.length;const done=dayTasks.filter(t=>t.done).length;const pct=total?Math.round(done/total*100):0;const circ=2*Math.PI*32;const dow=date.getDay();const card=document.createElement('div');card.className='day-card'+(isToday(date)?' is-today':'');card.innerHTML=`<div class="dcard-head"><div><div class="dcard-dayname">${THAI_DAYS[dow]}</div><div class="dcard-date">${date.getDate()}/${date.getMonth()+1}/${String(date.getFullYear()).slice(-2)}</div></div>${isToday(date)?'<div class="today-pill">วันนี้</div>':''}</div><div class="donut-area"><div class="donut-wrap"><svg viewBox="0 0 80 80"><circle class="donut-bg2" cx="40" cy="40" r="32"/><circle class="donut-fill2" cx="40" cy="40" r="32" stroke-dasharray="${circ}" stroke-dashoffset="${circ-(circ*pct/100)}" stroke="${pct===100?'#27ae60':'#4a9c4a'}"/></svg><div class="donut-num">${pct}%</div></div></div><div class="task-lbl">งาน</div><div class="task-list2" id="tl-${key}"></div><div class="add-row"><input class="add-inp" id="ti-${key}" placeholder="เพิ่มงาน..." onkeydown="if(event.key==='Enter')addTask('${key}')"><button class="add-btn2" onclick="addTask('${key}')">+</button></div><div class="day-sum"><div class="sum-it"><div class="sum-lbl2">ทั้งหมด</div><div class="sum-v sv-total" id="st-${key}">${total}</div></div><div class="sum-it"><div class="sum-lbl2">เสร็จ</div><div class="sum-v sv-done" id="sd-${key}">${done}</div></div><div class="sum-it"><div class="sum-lbl2">ยังไม่เสร็จ</div><div class="sum-v sv-undone" id="su-${key}">${total-done}</div></div></div>`;renderTaskList(key);return card;}
+function renderTaskList(key){const el=document.getElementById('tl-'+key);if(!el)return;const dayTasks=tasksCache[key]||[];el.innerHTML='';dayTasks.forEach(t=>{const item=document.createElement('div');item.className='task-item2'+(t.done?' done2':'');item.innerHTML=`<div class="task-cb2"></div><div class="task-txt2">${t.text}</div><button class="task-del" onclick="deleteTask('${t.id}','${key}',event)">×</button>`;item.querySelector('.task-cb2').addEventListener('click',()=>toggleTask(t.id,key));item.querySelector('.task-txt2').addEventListener('click',()=>toggleTask(t.id,key));el.appendChild(item);});updateDaySummary(key);}
+async function addTask(key){const inp=document.getElementById('ti-'+key);const text=inp.value.trim();if(!text)return;inp.value='';const{data,error}=await sb.from('tasks').insert({user_id:currentUser.id,date:key,text,done:false}).select().single();if(error){showToast('เพิ่มงานไม่สำเร็จ');return;}if(!tasksCache[key])tasksCache[key]=[];tasksCache[key].push(data);renderTaskList(key);renderPlanner();}
+async function toggleTask(id,key){const task=tasksCache[key]?.find(t=>t.id===id);if(!task)return;task.done=!task.done;renderTaskList(key);renderPlanner();await sb.from('tasks').update({done:task.done}).eq('id',id);}
+async function deleteTask(id,key,e){e.stopPropagation();tasksCache[key]=tasksCache[key]?.filter(t=>t.id!==id);renderTaskList(key);renderPlanner();await sb.from('tasks').delete().eq('id',id);}
+function updateDaySummary(key){const t=tasksCache[key]||[];const done=t.filter(x=>x.done).length;['st','sd','su'].forEach((p,i)=>{const el=document.getElementById(p+'-'+key);if(el)el.textContent=i===0?t.length:i===1?done:t.length-done;});}
+function changeWeek(d){weekOffset+=d;renderPlanner();}
+async function loadHabits(){const{data}=await sb.from('habits').select('*').eq('user_id',currentUser.id).order('created_at');if(data)habits=data;}
+async function renderHabits(){const month=monthOffset%12;const year=2026+Math.floor(monthOffset/12);document.getElementById('month-lbl').textContent=`${THAI_MONTHS[month]} ${year+543}`;const daysCount=new Date(year,month+1,0).getDate();const today=new Date();const startKey=`${year}-${String(month+1).padStart(2,'0')}-01`;const endKey=`${year}-${String(month+1).padStart(2,'0')}-${String(daysCount).padStart(2,'0')}`;const{data:checks}=await sb.from('habit_checks').select('*').eq('user_id',currentUser.id).gte('date',startKey).lte('date',endKey);const checkSet=new Set((checks||[]).map(c=>`${c.habit_id}_${c.date}`));const checkIdMap={};(checks||[]).forEach(c=>checkIdMap[`${c.habit_id}_${c.date}`]=c.id);const weeks=[];let week=[];for(let d=1;d<=daysCount;d++){const dow=new Date(year,month,d).getDay();if(d>1&&dow===0){weeks.push(week);week=[];}week.push({day:d,dow});}if(week.length)weeks.push(week);const table=document.getElementById('habit-table');table.innerHTML='';const whr=document.createElement('tr');const emth=document.createElement('th');emth.style.cssText='background:#e8f5e8;min-width:120px';whr.appendChild(emth);weeks.forEach((w,wi)=>{const th=document.createElement('th');th.className='wk-hd';th.colSpan=w.length;th.textContent=`สัปดาห์ที่ ${wi+1}`;whr.appendChild(th);});const thP=document.createElement('th');thP.className='wk-hd';thP.textContent='รวม';whr.appendChild(thP);table.appendChild(whr);const dhr=document.createElement('tr');const emth2=document.createElement('th');emth2.style.background='#e8f5e8';dhr.appendChild(emth2);weeks.forEach(w=>w.forEach(({dow})=>{const th=document.createElement('th');th.className='dy-hd'+(dow===0?' sun':dow===6?' sat':'');th.textContent=DAY_S[dow];dhr.appendChild(th);}));const thP2=document.createElement('th');thP2.className='dy-hd';thP2.textContent='%';dhr.appendChild(thP2);table.appendChild(dhr);const dnr=document.createElement('tr');const dnN=document.createElement('td');dnN.className='hname';dnN.style.fontWeight='600';dnN.textContent='วันที่';dnr.appendChild(dnN);weeks.forEach(w=>w.forEach(({day,dow})=>{const td=document.createElement('td');td.className='dn-cell'+(dow===0?' sun':dow===6?' sat':'');td.textContent=day;dnr.appendChild(td);}));dnr.appendChild(document.createElement('td'));table.appendChild(dnr);habits.forEach(habit=>{const tr=document.createElement('tr');const ntd=document.createElement('td');ntd.className='hname';ntd.textContent=habit.name;tr.appendChild(ntd);let doneCount=0,totalDays=0;weeks.forEach(w=>w.forEach(({day,dow})=>{const dKey=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;const ckKey=`${habit.id}_${dKey}`;const isFut=new Date(year,month,day)>today;const isChk=checkSet.has(ckKey);if(!isFut)totalDays++;if(isChk)doneCount++;const td=document.createElement('td');td.className='hck'+(isChk?' hchk':'')+(isFut?' hfut':'');if(!isFut)td.addEventListener('click',async()=>{if(isChk){checkSet.delete(ckKey);await sb.from('habit_checks').delete().eq('id',checkIdMap[ckKey]);}else{const{data:nc}=await sb.from('habit_checks').insert({user_id:currentUser.id,habit_id:habit.id,date:dKey}).select().single();if(nc){checkSet.add(ckKey);checkIdMap[ckKey]=nc.id;}}renderHabits();});tr.appendChild(td);}));const pct=totalDays?Math.round(doneCount/totalDays*100):0;const ptd=document.createElement('td');ptd.className='hpct-cell';ptd.style.color=pct>=80?'#27ae60':pct>=50?'#f39c12':'#e74c3c';ptd.textContent=pct+'%';tr.appendChild(ptd);table.appendChild(tr);});const sr=document.createElement('tr');sr.className='sum-row';const sn=document.createElement('td');sn.className='hname';sn.textContent='% รวม';sr.appendChild(sn);weeks.forEach(w=>w.forEach(({day})=>{const dKey=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;const isFut=new Date(year,month,day)>today;const td=document.createElement('td');td.className='dn-cell';if(!isFut&&habits.length){const d=habits.filter(h=>checkSet.has(`${h.id}_${dKey}`)).length;const p=Math.round(d/habits.length*100);td.textContent=p+'%';td.style.color=p===100?'#27ae60':p>=50?'#4a9c4a':'#e74c3c';}sr.appendChild(td);}));sr.appendChild(document.createElement('td'));table.appendChild(sr);const pills=document.getElementById('hpills');pills.innerHTML='';habits.forEach((h)=>{const pill=document.createElement('div');pill.className='hpill';pill.innerHTML=`${h.name}<button class="hdel" onclick="deleteHabit('${h.id}')">×</button>`;pills.appendChild(pill);});}
+async function addHabit(){const inp=document.getElementById('hinput');const name=inp.value.trim();if(!name)return;inp.value='';const{data,error}=await sb.from('habits').insert({user_id:currentUser.id,name}).select().single();if(error){showToast('เพิ่มไม่สำเร็จ');return;}habits.push(data);renderHabits();}
+async function deleteHabit(id){habits=habits.filter(h=>h.id!==id);await sb.from('habits').delete().eq('id',id);renderHabits();}
+function changeMonth(d){monthOffset=Math.max(0,Math.min(11,monthOffset+d));renderHabits();}
+async function renderSummary(){const{data}=await sb.from('tasks').select('*').eq('user_id',currentUser.id);const all=data||[];const total=all.length,done=all.filter(t=>t.done).length,undone=total-done;const pct=total?Math.round(done/total*100):0;const circ=2*Math.PI*38;const cards=document.getElementById('stats-cards');cards.innerHTML='';[{v:total,l:'งานรวมทั้งหมด',c:''},{v:done,l:'สำเร็จแล้ว',c:'green'},{v:undone,l:'ยังไม่เสร็จ',c:'red'},{v:pct+'%',l:'% สำเร็จ',c:pct>=70?'':pct>=50?'orange':'red'}].forEach(s=>{const c=document.createElement('div');c.className='scard';c.innerHTML=`<div class="scard-v ${s.c}">${s.v}</div><div class="scard-l">${s.l}</div>`;cards.appendChild(c);});document.getElementById('bd-done').style.strokeDashoffset=circ-(circ*pct/100);const uLen=circ*(undone/(total||1));document.getElementById('bd-undone').style.strokeDasharray=`${uLen} ${circ}`;document.getElementById('bd-undone').style.strokeDashoffset=-(circ*pct/100);document.getElementById('bdc-pct').textContent=pct+'%';document.getElementById('stats-tbl').innerHTML=`<tr><td>งานรวมทั้งหมด</td><td>${total}</td></tr><tr><td>สำเร็จ</td><td class="green-v">${done} (${total?Math.round(done/total*100):0}%)</td></tr><tr><td>ไม่สำเร็จ</td><td class="red-v">${undone} (${total?Math.round(undone/total*100):0}%)</td></tr>`;let score='-';if(pct>=90)score='ยอดเยี่ยม 🏆';else if(pct>=75)score='ดีมาก 👏';else if(pct>=50)score='เริ่มดี 😊';else if(total>0)score='สต่อไป 💪';document.getElementById('score-val').textContent=score;}
+</script>
+</body>
+</html>
